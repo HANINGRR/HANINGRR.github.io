@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Design - AI Singularity Log</title>
+    
+    <!-- 引入 Tailwind CSS (无需安装) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入复古字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- 配置 Tailwind 主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'retro-black': '#0a0a0a',
+                        'retro-orange': '#ff5500',
+                        'retro-orange-dim': '#cc4400',
+                        'retro-bg': '#e6e5d5',
+                        'retro-dark-bg': '#1a1a1a',
+                        'retro-green': '#4ade80',
+                        'retro-tape': '#2b2b2b',
+                        'retro-paper': '#f4f1ea',
+                    },
+                    fontFamily: {
+                        mono: ['"Share Tech Mono"', '"VT323"', 'monospace'],
+                        sans: ['"Noto Sans SC"', 'sans-serif'],
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #8080801a 1px, transparent 1px), linear-gradient(to bottom, #8080801a 1px, transparent 1px)",
+                    },
+                    animation: {
+                        'spin-slow': 'spin 4s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 核心基础样式 */
+        body { margin: 0; overflow: hidden; background-color: #e6e5d5; }
+        
+        /* CRT 扫描线效果 */
+        .scanline {
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px; pointer-events: none; z-index: 9999; opacity: 0.4;
+        }
+
+        /* 噪点动画 */
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9998; opacity: 0.03;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%221%22/%3E%3C/svg%3E');
+            animation: noiseShift 0.5s infinite steps(1);
+        }
+
+        @keyframes noiseShift {
+            0% { transform: translate(0,0); } 10% { transform: translate(-5%,-5%); }
+            20% { transform: translate(-10%,5%); } 30% { transform: translate(5%,-10%); }
+            40% { transform: translate(-5%,15%); } 50% { transform: translate(-10%,5%); }
+            60% { transform: translate(15%,0); } 70% { transform: translate(0,10%); }
+            80% { transform: translate(-15%,0); } 90% { transform: translate(10%,5%); }
+            100% { transform: translate(5%,0); }
+        }
+
+        /* 屏幕闪烁 */
+        .flicker { animation: flicker 0.15s infinite; }
+        @keyframes flicker { 0% { opacity: 0.99; } 50% { opacity: 1; } 100% { opacity: 0.99; } }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #e6e5d5; border-left: 1px solid #000; }
+        ::-webkit-scrollbar-thumb { background: #ff5500; border: 1px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: #cc4400; }
+
+        /* 实用类 */
+        .text-shadow-retro { text-shadow: 2px 2px 0px rgba(0,0,0,0.2); }
+        .box-shadow-hard { box-shadow: 6px 6px 0px 0px rgba(0,0,0,1); }
+        .box-shadow-hard-sm { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+        
+        /* 隐藏元素 */
+        .hidden { display: none !important; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="font-sans text-retro-black flicker">
+
+    <!-- 视觉特效层 -->
+    <div id="crt-layer" class="scanline"></div>
+    <div class="noise-overlay"></div>
+
+    <!-- 1. 启动屏幕 (Splash Screen) -->
+    <div id="splash-screen" class="fixed inset-0 bg-retro-black z-50 flex flex-col items-center justify-center text-retro-orange overflow-hidden">
+        <!-- 背景装饰 -->
+        <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+            <div class="w-[600px] h-[600px] border-[20px] border-retro-orange rounded-full animate-pulse"></div>
+        </div>
+
+        <div class="z-20 w-full max-w-xl px-8 flex flex-col gap-6">
+            <!-- 标题框 -->
+            <div class="text-center mb-8 border-4 border-retro-orange p-6 bg-retro-black shadow-[10px_10px_0px_0px_#cc4400]">
+                <div class="flex justify-between items-center mb-4 text-xs tracking-widest">
+                    <span>SYSTEM: WEB_DESIGN</span>
+                    <span>V.1.0.4</span>
+                </div>
+                <h1 class="text-7xl font-black tracking-tighter text-white drop-shadow-[4px_4px_0px_rgba(255,85,0,0.5)] mb-2">WEB</h1>
+                <p className="tracking-[0.5em] text-retro-orange text-sm font-bold uppercase bg-black inline-block px-2">Design</p>
+            </div>
+
+            <!-- 日志输出区 -->
+            <div id="boot-logs" class="h-32 flex flex-col justify-end text-xs md:text-sm space-y-1 mb-4 font-mono text-retro-green opacity-90 border-l-2 border-retro-green pl-2 bg-black/50 p-2">
+                <!-- JS 会填充这里 -->
+            </div>
+
+            <!-- 进度条 -->
+            <div class="w-full space-y-2">
+                <div class="flex justify-between text-xs uppercase tracking-widest text-retro-orange">
+                    <span>System_Load</span>
+                    <span id="load-percentage">0%</span>
+                </div>
+                <div class="w-full border-2 border-retro-orange h-6 p-1 relative">
+                    <div id="progress-bar" class="h-full bg-retro-orange transition-all duration-300 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 进入按钮 -->
+            <div id="enter-btn-container" class="flex justify-center mt-8 transition-opacity duration-1000 opacity-0">
+                <button id="enter-btn" class="font-mono text-xl px-12 py-4 bg-white text-black hover:bg-retro-orange hover:text-black hover:shadow-[0_0_20px_#ff5500] w-full font-black tracking-widest border-2 border-black uppercase flex items-center justify-center gap-2">
+                    <i data-lucide="power" class="w-5 h-5"></i> 进入
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 主应用界面 (Main App) -->
+    <div id="main-app" class="hidden h-screen flex overflow-hidden bg-retro-bg">
+        
+        <!-- 侧边栏 -->
+        <aside class="w-72 bg-[#f0f0f0] border-r-4 border-black flex flex-col justify-between hidden md:flex shrink-0 z-40 relative shadow-[4px_0_10px_rgba(0,0,0,0.1)]">
+            <div>
+                <!-- 侧边栏头部 -->
+                <div class="bg-retro-orange p-6 border-b-4 border-black relative overflow-hidden group">
+                    <i data-lucide="disc" class="absolute top-0 right-0 p-1 opacity-20 transform rotate-12 w-24 h-24"></i>
+                    <h1 class="font-black text-3xl uppercase leading-none tracking-tighter relative z-10">Web<br/>Design</h1>
+                    <p class="font-mono text-xs mt-2 font-bold tracking-widest bg-black text-retro-orange inline-block px-1 relative z-10">CLASSIFIED LOG</p>
+                </div>
+
+                <!-- 导航区 -->
+                <nav class="p-4 space-y-3">
+                    <button onclick="router.go('dashboard')" class="w-full text-left px-4 py-3 border-2 border-black font-bold text-sm flex items-center gap-3 transition-all bg-white text-black hover:bg-retro-green box-shadow-hard-sm active:translate-y-1 active:shadow-none">
+                        <i data-lucide="layers" class="w-4 h-4"></i>
+                        <span>主页面</span>
+                    </button>
+                    
+                    <div class="py-2 flex items-center gap-2">
+                        <div class="h-px bg-black flex-1"></div>
+                        <span class="font-mono text-[10px] font-bold text-gray-400">ARCHIVE_LIST</span>
+                        <div class="h-px bg-black flex-1"></div>
+                    </div>
+
+                    <div id="sidebar-list" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                        <!-- JS 填充列表 -->
+                    </div>
+                </nav>
+            </div>
+
+            <!-- 底部控制栏 -->
+            <div class="p-4 border-t-4 border-black bg-[#e0e0e0]">
+                <h3 class="font-mono text-[10px] font-bold mb-3 uppercase border-b border-black pb-1 text-gray-500">System Configuration</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="audio-toggle" class="flex items-center justify-center border-2 border-black px-1 py-2 text-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] bg-retro-tape text-white transition-colors">
+                        <i data-lucide="volume-x" class="w-3 h-3 mr-1"></i> AUDIO
+                    </button>
+                    <button id="crt-toggle" class="flex items-center justify-center border-2 border-black px-1 py-2 text-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] bg-retro-green text-black">
+                        <i data-lucide="monitor" class="w-3 h-3 mr-1"></i> CRT
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 overflow-y-auto bg-retro-bg bg-grid-pattern bg-[size:32px_32px] relative scroll-smooth">
+            <header class="sticky top-0 z-30 bg-retro-bg/95 backdrop-blur-sm border-b-2 border-black px-6 md:px-12 py-4 flex justify-between items-center shadow-md">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_red]"></div>
+                    <span class="font-mono text-xs font-bold tracking-widest">LIVE_CONNECTION</span>
+                </div>
+                <div class="font-mono text-xs text-gray-500 bg-white border border-black px-2 py-1">
+                    REC_DATE: 2024-11-25 // SECTOR: A7
+                </div>
+            </header>
+
+            <div class="max-w-6xl mx-auto p-6 md:p-12 pb-24">
+                <!-- 头部标题 -->
+                <div id="page-header" class="mb-12 border-l-8 border-retro-orange pl-6 py-2">
+                    <h1 class="text-4xl md:text-6xl font-black text-black tracking-tighter drop-shadow-sm mb-2">
+                        <span class="text-retro-orange stroke-black">AI发展对我们的影响</span>
+                    </h1>
+                    <p class="font-mono text-sm md:text-base text-gray-600 max-w-2xl">
+                        ARCHIVE OF HUMAN-AI COEVOLUTION. // ACCESS LEVEL: UNRESTRICTED
+                    </p>
+                </div>
+
+                <!-- 视图容器 -->
+                <div id="content-view">
+                    <!-- Dashboard 或 Detail 将渲染在这里 -->
+                </div>
+
+                <!-- 页脚 -->
+                <footer class="mt-20 border-t-4 border-black border-dashed pt-8 text-center font-mono text-xs text-gray-500 pb-12">
+                    <p class="mb-2">23物联网1班</p>
+                    <p class="mb-2">* WEB DESIGN // OBSERVER LOGS *</p>
+                    <div class="flex justify-center items-center gap-4">
+                        <span class="bg-black text-white px-2 py-0.5">V.1.0.4</span>
+                        <span>RENDER_ENGINE: HTML5</span>
+                        <span>API: GEMINI_3.0</span>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT 逻辑部分 -->
+    <script>
+        // --- 1. 数据常量 (Constants) ---
+        const TOPICS = [
+            { 
+                id: 'tech-essence', 
+                title: '技术本质', 
+                enTitle: 'TECH_ESSENCE', 
+                description: 'AI 是什么？底层逻辑与数学基础',
+                content: [
+                    { heading: '核心定义', type: 'text', body: '人工智能（AI）是通过计算机模拟人类智能行为（推理、学习、感知、决策）的技术体系，本质是 “数据 + 算法 + 算力” 的协同产物。' },
+                    { heading: '技术分层', type: 'key-value', keyValueData: [{ label: '基础层', value: '算力（GPU/CPU/专用芯片）、数据（标注数据/开源数据集）' }, { label: '技术层', value: '算法模型（深度学习、大模型、强化学习、Transformer架构）' }, { label: '应用层', value: '具体产品（ChatGPT、AI绘画、自动驾驶、智能客服）' }] },
+                    { heading: '关键特征', type: 'list', list: ['数据驱动：模型性能依赖海量高质量数据训练', '概率性输出：结果是“最优解”而非“绝对正确”（存在“幻觉”风险）', '无自主意识：本质是复杂数学模型，不具备人类的情感、意志和自我认知'] },
+                    { heading: '通俗类比', type: 'text', body: 'AI 像“超级学生”——通过学习海量“教材”（数据）掌握规律，再用“解题方法”（算法）应对新问题，但不懂“知识的本质”。' }
+                ]
+            },
+            { 
+                id: 'core-capabilities', 
+                title: '核心能力', 
+                enTitle: 'CORE_CAPS', 
+                description: 'AI 能做什么？功能边界视角',
+                content: [
+                    { heading: '四大维度', type: 'text', body: 'AI 的能力集中在“感知、理解、生成、决策”四大维度，且呈现“专用智能强、通用智能弱”的特点。' },
+                    { heading: '能力解析', type: 'key-value', keyValueData: [{ label: '感知能力', value: '识别图像、语音、文字等非结构化数据（如人脸识别）' }, { label: '理解能力', value: '解析自然语言、提取核心信息（如机器翻译、文本摘要）' }, { label: '生成能力', value: '创造文本、图像、音频、代码等内容（如ChatGPT、Midjourney）' }, { label: '决策能力', value: '在特定场景下优化选择（如智能投顾、路径规划）' }] },
+                    { heading: '能力边界', type: 'columns', columns: [{ title: '擅长', desc: '重复性工作、海量数据处理、规则明确的任务' }, { title: '短板', desc: '复杂逻辑推理、情感共情、跨领域迁移、创新科研突破' }] }
+                ]
+            },
+            { id: 'industry-apps', title: '行业应用', enTitle: 'IND_APPS', description: 'AI 正在改变哪些领域？落地场景', content: [{ heading: '典型应用场景', type: 'key-value', keyValueData: [{ label: '科技/互联网', value: '代码生成、智能推荐。价值：提升开发效率、优化体验' }, { label: '医疗健康', value: '辅助诊断、药物研发。价值：降低误诊率、缩短周期' }, { label: '教育', value: '个性化学习、AI答疑。价值：因材施教、减轻负担' }, { label: '金融', value: '风控、智能投顾。价值：降低风险、提升效率' }, { label: '制造业', value: '智能质检、工业机器人。价值：提高产能、降低成本' }, { label: '日常生活', value: '智能家居、语音助手。价值：简化流程、提升便捷' }] }, { heading: '核心趋势', type: 'text', body: '从“单点应用”走向“全流程渗透”（如 AI 从医疗诊断延伸到患者管理、康复跟踪）。' }] },
+            { id: 'social-impact', title: '社会影响', enTitle: 'SOC_IMPACT', description: '双重作用：机遇与挑战', content: [{ heading: '积极影响', type: 'list', list: ['生产力革命：提升各行业效率（如编程效率提升40%）', '资源普惠：让优质教育、医疗资源触达偏远地区', '解放人力：替代危险、重复、枯燥的工作', '创新赋能：催生新产业、新岗位（如AI训练师）'] }, { heading: '消极影响', type: 'list', list: ['就业结构冲击：初级岗位需求缩减', '数字鸿沟：不同人群使用能力差距扩大', '社会公平：算法偏见可能加剧歧视', '文化冲击：生成内容对原创文化的冲击'] }] },
+            { id: 'ethical-risks', title: '伦理风险', enTitle: 'ETHIC_RISK', description: 'AI 发展的“红线”在哪里？', content: [{ heading: '核心风险', type: 'key-value', keyValueData: [{ label: '数据隐私', value: '训练数据可能包含个人隐私，存在泄露风险' }, { label: '算法黑箱', value: '决策过程不透明，难以追溯错误根源' }, { label: '版权争议', value: 'AI生成物的版权归属模糊' }, { label: '滥用风险', value: 'Deepfake造假、AI诈骗、虚假信息传播' }, { label: '责任界定', value: 'AI出错时，责任主体（开发者/用户/AI）难以界定' }] }, { heading: '应对方向', type: 'text', body: '建立AI伦理规范（如欧盟《AI法案》）、算法透明化、数据合规治理。' }] },
+            { id: 'dev-trends', title: '发展趋势', enTitle: 'DEV_TRENDS', description: 'AI 未来会走向何方？', content: [{ heading: '五大演进方向', type: 'list', list: ['从专用到通用：走向通用人工智能（AGI）雏形，具备跨领域能力', '模型轻量化：出现适配端侧设备的轻量化模型（如Llama 3小型版）', '多模态融合：文本、图像、语音、视频深度融合，贴近人类感知', '行业定制化：垂直领域大模型兴起（医疗、法律专用模型）', '安全与可控：AI安全、可解释AI（XAI）、对齐技术成为核心'] }] },
+            { id: 'learning-threshold', title: '学习门槛', enTitle: 'LEARN_CURVE', description: '普通人如何掌握AI工具与思维', content: [{ heading: '使用层面：零门槛', type: 'text', body: '工具：ChatGPT（对话）、Midjourney（绘画）、Copilot（编程）。核心技能是“提示工程”——用清晰语言引导AI。' }, { heading: '研发层面：专业门槛', type: 'list', list: ['核心技能：数学（线代/概率）、编程（Python/PyTorch）、机器学习理论', '学习路径：基础编程 → 机器学习 → 深度学习 → 大模型微调'] }] },
+            { id: 'human-machine', title: '人机关系', enTitle: 'H_M_RELATION', description: '工具、伙伴还是对手？', content: [{ heading: '三种视角', type: 'key-value', keyValueData: [{ label: '超级工具', value: '人类能力的延伸，放大计算、分析、生成能力' }, { label: '协作伙伴', value: '形成“人机协同”模式，放大人类核心价值' }, { label: '非对手', value: 'AI缺乏自主意识和情感，无法替代创新、共情与伦理决策' }] }, { heading: '核心原则', type: 'text', body: '“人类主导，AI辅助”——AI解决“效率问题”，人类聚焦“价值问题”（做什么、为什么做）。' }] }
+        ];
+
+        // --- 2. 路由与视图控制 (Router & View) ---
+        const router = {
+            currentView: 'splash',
+            go: (view, topicId = null) => {
+                const splash = document.getElementById('splash-screen');
+                const main = document.getElementById('main-app');
+                const content = document.getElementById('content-view');
+                const header = document.getElementById('page-header');
+                
+                // 渲染侧边栏
+                renderSidebar(topicId);
+
+                if (view === 'dashboard') {
+                    splash.classList.add('hidden');
+                    main.classList.remove('hidden');
+                    header.classList.remove('hidden');
+                    content.innerHTML = renderDashboardHTML();
+                    lucide.createIcons(); // 刷新图标
+                    window.scrollTo(0, 0);
+                } else if (view === 'detail' && topicId) {
+                    const topic = TOPICS.find(t => t.id === topicId);
+                    if (topic) {
+                        content.innerHTML = renderDetailHTML(topic);
+                        lucide.createIcons();
+                        window.scrollTo(0, 0);
+                    }
+                }
+            }
+        };
+
+        // --- 3. 渲染函数 (Renderers) ---
+        function renderSidebar(activeId) {
+            const list = document.getElementById('sidebar-list');
+            list.innerHTML = TOPICS.map((t, i) => `
+                <button onclick="router.go('detail', '${t.id}')" class="group w-full text-left p-2 border border-black font-mono text-xs flex flex-col transition-all relative overflow-hidden ${activeId === t.id ? 'bg-retro-orange text-black' : 'bg-white hover:bg-zinc-100'}">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${activeId === t.id ? 'bg-black' : 'bg-retro-orange'} group-hover:w-full transition-all duration-300 opacity-20"></div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <span class="font-bold">${t.title}</span>
+                        <span class="opacity-50">0${i + 1}</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function renderDashboardHTML() {
+            return `
+                <div class="animate-fade-in">
+                    <div class="border-b-4 border-black pb-6 mb-10 flex flex-col md:flex-row justify-between items-end gap-4">
+                        <div class="w-full">
+                            <h2 class="text-4xl font-black text-black uppercase tracking-tighter flex items-center gap-3">
+                                <i data-lucide="disc" class="text-retro-orange animate-spin-slow w-8 h-8"></i>
+                                绪论
+                            </h2>
+                            <p class="font-mono text-xs md:text-sm text-gray-600 mt-4 pl-1 leading-relaxed max-w-5xl text-justify">
+                                未来，真正的竞争不是 “人类与 AI 的竞争”，而是 “掌握了框架化 + 广泛化学习能力的人类，与依赖单一技能、缺乏认知框架的人类的竞争”。因此，我们的学习不应再纠结于 “记住多少知识点”“掌握多少技能”，而应聚焦于 “搭建什么样的认知框架”“拓宽什么样的知识边界”—— 只有这样，才能在 AI 时代始终占据主导地位，让技术成为推动自身成长的强大助力，而非被技术淘汰的 “牺牲品”。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12 px-4">
+                        ${TOPICS.map((t, i) => `
+                            <div onclick="router.go('detail', '${t.id}')" class="group relative cursor-pointer h-48 w-full">
+                                <div class="relative h-full w-full bg-retro-tape rounded-lg border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[12px_12px_0px_0px_rgba(255,85,0,0.4)] overflow-hidden flex flex-col">
+                                    <div class="flex justify-between px-4 py-2">
+                                        <div class="w-3 h-3 rounded-full bg-zinc-600 border border-black flex items-center justify-center"><div class="w-1 h-0.5 bg-black rotate-45"></div></div>
+                                        <div class="w-3 h-3 rounded-full bg-zinc-600 border border-black flex items-center justify-center"><div class="w-1 h-0.5 bg-black -rotate-45"></div></div>
+                                    </div>
+                                    <div class="mx-4 flex-1 bg-retro-paper rounded-sm p-3 relative border-2 border-zinc-400 flex flex-col">
+                                        <div class="h-4 w-full bg-retro-orange mb-2 flex items-center px-2 overflow-hidden">
+                                            <span class="text-[10px] font-bold text-black whitespace-nowrap">HIGH FIDELITY // 60 MIN</span>
+                                        </div>
+                                        <h3 class="font-sans font-black text-xl text-black leading-tight mb-1 group-hover:text-retro-orange transition-colors">${t.title}</h3>
+                                        <p class="font-mono text-[10px] text-gray-500 uppercase tracking-tighter">VOL.${i + 1} - ${t.enTitle}</p>
+                                        <div class="mt-auto h-12 bg-zinc-800 rounded-full border-2 border-black flex justify-center items-center gap-4 px-4 relative overflow-hidden">
+                                            <div class="w-8 h-8 rounded-full bg-white border-4 border-retro-tape flex items-center justify-center"><div class="w-1 h-1 bg-black"></div></div>
+                                            <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white to-transparent opacity-10"></div>
+                                            <div class="w-8 h-8 rounded-full bg-white border-4 border-retro-tape flex items-center justify-center"><div class="w-1 h-1 bg-black"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDetailHTML(topic) {
+            return `
+                <div class="animate-fade-in pb-12">
+                    <div class="flex items-center gap-4 mb-8 border-b-4 border-black pb-4">
+                        <button onclick="router.go('dashboard')" class="px-3 py-2 bg-white border-2 border-black hover:bg-black hover:text-white transition-colors cursor-pointer">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </button>
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-black uppercase text-black leading-none">${topic.title}</h1>
+                            <span class="font-mono text-retro-orange-dim text-sm font-bold tracking-widest">ID: ${topic.enTitle}</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full">
+                        <div class="space-y-8">
+                            <div class="bg-white border-2 border-black p-6 shadow-[6px_6px_0px_0px_#000]">
+                                <p class="font-sans text-xl font-medium text-black leading-relaxed">${topic.description}</p>
+                            </div>
+                            
+                            ${topic.content.map(section => `
+                                <div class="relative">
+                                    ${section.heading ? `<div class="flex items-center gap-2 mb-3"><div class="w-3 h-3 bg-retro-orange"></div><h3 class="font-mono font-bold text-lg uppercase tracking-wider">${section.heading}</h3></div>` : ''}
+                                    
+                                    ${section.type === 'text' ? `
+                                        <div class="bg-[#f4f4ec] p-5 border-l-4 border-black font-sans text-gray-800 leading-7">${section.body}</div>
+                                    ` : ''}
+
+                                    ${section.type === 'list' ? `
+                                        <ul class="space-y-3">
+                                            ${section.list.map((item, i) => `
+                                                <li class="flex items-start gap-3 bg-white p-3 border border-gray-300 shadow-sm">
+                                                    <span class="font-mono font-bold text-retro-orange">0${i+1}.</span>
+                                                    <span class="font-sans text-gray-800">${item}</span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    ` : ''}
+
+                                    ${section.type === 'key-value' ? `
+                                        <div class="grid gap-3">
+                                            ${section.keyValueData.map(kv => `
+                                                <div class="flex flex-col md:flex-row border border-black bg-white">
+                                                    <div class="bg-black text-white px-4 py-2 font-mono font-bold text-sm w-full md:w-32 flex-shrink-0 flex items-center">${kv.label}</div>
+                                                    <div class="px-4 py-2 font-sans text-sm md:text-base flex items-center">${kv.value}</div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${section.type === 'columns' ? `
+                                        <div class="grid md:grid-cols-2 gap-4">
+                                            ${section.columns.map(col => `
+                                                <div class="bg-[#e8e8d8] border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)]">
+                                                    <h3 class="font-sans font-bold text-lg text-black border-b-2 border-black pb-2 mb-2">${col.title}</h3>
+                                                    <p class="text-sm font-sans">${col.desc}</p>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 4. 启动与交互逻辑 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const logs = document.getElementById('boot-logs');
+            const logMsgs = ["> MOUNTING_DRIVE_C...", "> DECRYPTING_ARCHIVE...", "> LOADING_NEURAL_MAPS...", "> OPTIMIZING_VRAM...", "> CONNECTION_ESTABLISHED..."];
+            let logIdx = 0;
+
+            // 启动动画
+            const logInterval = setInterval(() => {
+                if (logIdx < logMsgs.length) {
+                    const div = document.createElement('div');
+                    div.innerText = logMsgs[logIdx];
+                    logs.appendChild(div);
+                    logIdx++;
+                } else {
+                    clearInterval(logInterval);
+                }
+            }, 400);
+
+            let progress = 0;
+            const bar = document.getElementById('progress-bar');
+            const txt = document.getElementById('load-percentage');
+            const btn = document.getElementById('enter-btn-container');
+
+            const progInterval = setInterval(() => {
+                progress += Math.floor(Math.random() * 8) + 1;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(progInterval);
+                    btn.classList.remove('opacity-0');
+                    btn.classList.add('opacity-100');
+                }
+                bar.style.width = progress + '%';
+                txt.innerText = progress + '%';
+            }, 80);
+
+            // 按钮事件
+            document.getElementById('enter-btn').addEventListener('click', () => {
+                // 初始化 AudioContext (必须在用户交互后)
+                initAudio();
+                router.go('dashboard');
+            });
+
+            document.getElementById('crt-toggle').addEventListener('click', function() {
+                document.getElementById('crt-layer').classList.toggle('hidden');
+                document.body.classList.toggle('flicker');
+                this.classList.toggle('bg-retro-green');
+                this.classList.toggle('bg-gray-300');
+            });
+            
+            lucide.createIcons();
+        });
+
+        // --- 5. 音频引擎 (Audio Engine) - 简化版 ---
+        let audioCtx;
+        let isAudioOn = false;
+        let intervalId;
+
+        function initAudio() {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        document.getElementById('audio-toggle').addEventListener('click', function() {
+            if (!audioCtx) initAudio();
+            isAudioOn = !isAudioOn;
+            
+            const btn = this;
+            if (isAudioOn) {
+                btn.classList.remove('bg-retro-tape', 'text-white');
+                btn.classList.add('bg-retro-orange', 'text-black');
+                btn.innerHTML = `<i data-lucide="volume-2" class="w-3 h-3 mr-1"></i> ON`;
+                startMusic();
+            } else {
+                btn.classList.add('bg-retro-tape', 'text-white');
+                btn.classList.remove('bg-retro-orange', 'text-black');
+                btn.innerHTML = `<i data-lucide="volume-x" class="w-3 h-3 mr-1"></i> AUDIO`;
+                stopMusic();
+            }
+            lucide.createIcons();
+        });
+
+        function startMusic() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let beat = 0;
+            const bpm = 105;
+            const interval = (60 / bpm) * 1000;
+            
+            intervalId = setInterval(() => {
+                playBeat(beat);
+                beat = (beat + 1) % 16;
+            }, interval / 4); // 16th notes
+        }
+
+        function stopMusic() {
+            clearInterval(intervalId);
+        }
+
+        function playBeat(beat) {
+            const t = audioCtx.currentTime;
+            // Kick (Beat 0, 4, 8, 12)
+            if (beat % 4 === 0) playTone(150, 'sine', t, 0.1);
+            // Snare (Beat 4, 12)
+            if (beat % 8 === 4) playNoise(t);
+            // HiHat (Every 2)
+            if (beat % 2 === 0) playTone(8000, 'triangle', t, 0.05, 0.1);
+            // Bass
+            if (beat % 4 === 0) playTone(55, 'sawtooth', t, 0.2);
+            // Melody (Arpeggio)
+            if (beat % 2 === 0) playTone(220 + (beat * 10), 'square', t, 0.1, 0.05);
+        }
+
+        function playTone(freq, type, time, dur, vol=0.5) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.value = freq;
+            osc.type = type;
+            gain.gain.setValueAtTime(vol, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + dur);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(time);
+            osc.stop(time + dur);
+        }
+
+        function playNoise(time) {
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            noise.connect(gain).connect(audioCtx.destination);
+            noise.start(time);
+        }
+
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
